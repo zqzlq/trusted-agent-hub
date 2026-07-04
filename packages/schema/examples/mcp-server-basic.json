@@ -1,0 +1,99 @@
+{
+  "$schema": "../../agent-package.schema.json",
+  "name": "postgres-explorer",
+  "version": "2.1.0",
+  "type": "mcp_server",
+  "description": "PostgreSQL 数据库浏览与查询 MCP Server，支持只读查询、Schema 浏览和慢查询分析，禁止执行 DDL 和写操作",
+  "author": {
+    "name": "DataTools Org",
+    "email": "team@datatools.dev",
+    "url": "https://github.com/datatools-org"
+  },
+  "license": "Apache-2.0",
+  "source": {
+    "type": "github",
+    "repository_url": "https://github.com/datatools-org/postgres-explorer",
+    "owner": "datatools-org",
+    "repo": "postgres-explorer",
+    "ref_type": "release",
+    "ref": "v2.1.0",
+    "commit_hash": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
+    "verified_owner": true,
+    "stars": 456,
+    "last_commit_at": "2026-06-15T08:00:00Z"
+  },
+  "integrity": {
+    "sha256": "d4c3b2a198fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b800",
+    "signature": "-----BEGIN PGP SIGNATURE-----\n...\n-----END PGP SIGNATURE-----",
+    "attestation_url": "https://github.com/datatools-org/postgres-explorer/attestations/v2.1.0"
+  },
+  "compatibility": ["claude-code", "mcp-client-generic", "cursor"],
+  "keywords": ["postgresql", "database", "sql", "mcp", "read-only"],
+  "category": "data",
+  "homepage": "https://datatools.dev/postgres-explorer",
+  "dependencies": {
+    "npm": [{ "name": "pg", "version": "^8.13.0" }],
+    "system": ["node"]
+  },
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": [],
+      "delete": false
+    },
+    "shell": {
+      "allowed": false
+    },
+    "network": {
+      "allowed": true,
+      "domains": ["localhost"],
+      "description": "连接本地 PostgreSQL 实例"
+    },
+    "environment": {
+      "read": ["DATABASE_URL", "PGHOST", "PGPORT", "PGDATABASE", "PGUSER"],
+      "write": []
+    },
+    "database": {
+      "allowed": true,
+      "drivers": ["postgresql"],
+      "description": "只读查询和 Schema 浏览，不执行 DDL/DML 写操作"
+    }
+  },
+  "installation": {
+    "method": "npm_install",
+    "targets": [
+      {
+        "client": "claude-code",
+        "destination": "mcpServers.postgres-explorer",
+        "config_template": "{\n  \"mcpServers\": {\n    \"postgres-explorer\": {\n      \"command\": \"npx\",\n      \"args\": [\"@datatools/postgres-explorer@${version}\"],\n      \"env\": {\n        \"DATABASE_URL\": \"${DATABASE_URL}\"\n      }\n    }\n  }\n}"
+      }
+    ],
+    "command": "npm install -g @datatools/postgres-explorer",
+    "pre_install_message": "此 MCP Server 需要访问 PostgreSQL 数据库。请确保已配置 DATABASE_URL 环境变量。",
+    "post_install_message": "安装完成。在 Claude Code 中重启 MCP 连接即可使用。"
+  },
+  "mcp_server_config": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["@datatools/postgres-explorer"],
+    "env": {
+      "DATABASE_URL": "PostgreSQL 连接字符串",
+      "PGHOST": "可选，数据库主机地址",
+      "PGPORT": "可选，数据库端口"
+    },
+    "tools": [
+      { "name": "query", "description": "执行只读 SQL 查询" },
+      { "name": "list_tables", "description": "列出所有表" },
+      { "name": "describe_table", "description": "查看表结构" },
+      { "name": "explain_query", "description": "分析查询计划" },
+      { "name": "slow_queries", "description": "查看慢查询日志" }
+    ],
+    "resources": [
+      { "uri": "schema://tables", "description": "数据库表结构信息" },
+      { "uri": "schema://indexes", "description": "索引信息" }
+    ],
+    "prompts": [
+      { "name": "analyze-perf", "description": "分析数据库性能问题" }
+    ]
+  }
+}

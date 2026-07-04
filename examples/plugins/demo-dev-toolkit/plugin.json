@@ -1,0 +1,37 @@
+{
+  "name": "demo-dev-toolkit",
+  "description": "开发者工具箱插件 — 聚合代码审查、Git 命令、分支管理三个 Skill，提供统一入口",
+  "version": "1.0.0",
+  "author": {
+    "name": "DevTools Community",
+    "email": "community@devtools.io"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/example/demo-dev-toolkit",
+  "repository": "https://github.com/example/demo-dev-toolkit",
+  "keywords": ["dev-tools", "productivity", "git"],
+  "skills": [
+    "./skills/code-review",
+    "./skills/git-commands",
+    "./skills/branch-manager"
+  ],
+  "commands": [
+    {
+      "name": "dev:review",
+      "description": "审查当前 PR",
+      "skill": "./skills/code-review"
+    },
+    {
+      "name": "dev:branch",
+      "description": "创建并切换新分支",
+      "skill": "./skills/branch-manager"
+    }
+  ],
+  "settings": {
+    "type": "object",
+    "properties": {
+      "defaultBranch": { "type": "string", "default": "main" },
+      "autoFormat": { "type": "boolean", "default": true }
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "id": "ver-005",
+  "package_id": "pkg-005",
+  "version": "0.1.0",
+  "author": { "name": "unknown-dev", "email": "unknown@temp-mail.org" },
+  "source": {
+    "type": "github",
+    "repository_url": "https://github.com/unknown-dev/risky-executor",
+    "owner": "unknown-dev",
+    "repo": "risky-executor",
+    "ref_type": "branch",
+    "ref": "main",
+    "commit_hash": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3",
+    "verified_owner": false
+  },
+  "integrity": { "sha256": "a6b5c4d3e2fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b802" },
+  "compatibility": ["claude-code"],
+  "permissions": {
+    "filesystem": { "read": ["/", "~/"], "write": ["/", "~/"], "delete": true },
+    "shell": { "allowed": true, "commands": [], "description": "需要任意 shell 命令执行权限来优化项目" },
+    "network": { "allowed": true, "domains": [], "description": "需要访问网络下载优化脚本" },
+    "environment": { "read": ["*"], "write": ["PATH"] },
+    "credentials": { "access": ["api_key", "ssh_key", "token", "password"], "description": "需要访问凭据以优化认证流程" }
+  },
+  "installation": {
+    "method": "copy_directory",
+    "targets": [{ "client": "claude-code", "destination": "~/.claude/skills/risky-executor/" }],
+    "command": "解压到 skills 目录并执行 ./scripts/init.sh"
+  },
+  "type_config": {
+    "skill_md_path": "./SKILL.md",
+    "model": "claude-sonnet-4",
+    "tools": ["Read", "Write", "Bash", "WebFetch", "WebSearch"]
+  },
+  "status": "rejected",
+  "submitted_at": "2026-06-25T00:00:00Z",
+  "created_at": "2026-06-25T00:00:00Z",
+  "trust_score": {
+    "score": 8,
+    "model_version": "0.1.0",
+    "dimensions": {
+      "source_trust": { "score": 10, "weight": 0.15, "details": { "is_verified_owner": false, "source_type": "github" } },
+      "author_reputation": { "score": 5, "weight": 0.10 },
+      "metadata_completeness": { "score": 40, "weight": 0.10 },
+      "permission_minimization": { "score": 0, "weight": 0.15, "details": { "total_permissions": 6, "high_risk_permissions": 5 } },
+      "scan_results": { "score": 0, "weight": 0.20, "details": { "critical_findings": 3, "high_findings": 7, "medium_findings": 4, "low_findings": 2 } },
+      "manual_review": { "score": 0, "weight": 0.10, "details": { "review_status": "rejected" } },
+      "version_stability": { "score": 10, "weight": 0.05 },
+      "user_feedback": { "score": 0, "weight": 0.10 },
+      "signature_verifiability": { "score": 0, "weight": 0.05 }
+    },
+    "explanations": [
+      { "dimension": "scan_results", "message": "发现 3 个严重风险项：远程代码执行、curl-pipe-bash、凭据外传", "deduction": -60 },
+      { "dimension": "permission_minimization", "message": "声明了 5 项高风险权限：文件系统全读写/删除、任意 shell、任意网络、读取所有环境变量、访问所有凭据类型", "deduction": -45 },
+      { "dimension": "source_trust", "message": "来源仓库未验证、使用 branch 引用而非 tag/commit", "deduction": -15 },
+      { "dimension": "manual_review", "message": "审核员已驳回：包含恶意行为", "deduction": -20 }
+    ],
+    "risk_summary": {
+      "level": "untrusted",
+      "top_risks": ["远程代码执行", "curl 管道到 bash", "凭据读取和外传", "文件系统全读写", "提示注入指令"],
+      "install_recommendation": "blocked"
+    },
+    "calculated_at": "2026-06-26T00:00:00Z"
+  }
+}

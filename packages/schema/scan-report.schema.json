@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trusted-agent-hub.dev/schemas/scan-report.schema.json",
+  "title": "Risk Scan Report",
+  "description": "自动风险扫描报告 Schema，由扫描器生成，供审核员和评分模型使用",
+  "type": "object",
+  "required": [
+    "scan_id",
+    "package_name",
+    "version",
+    "scanned_at",
+    "scanner_version",
+    "findings",
+    "summary"
+  ],
+  "properties": {
+    "scan_id": {
+      "type": "string",
+      "description": "扫描任务唯一标识"
+    },
+    "package_name": {
+      "type": "string",
+      "description": "被扫描的能力包名称"
+    },
+    "version": {
+      "type": "string",
+      "description": "被扫描的版本号"
+    },
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "扫描时间（ISO 8601）"
+    },
+    "scanner_version": {
+      "type": "string",
+      "description": "扫描器版本"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "扫描耗时（毫秒）"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "rule_id", "severity", "category", "title", "location"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "发现项唯一 ID"
+          },
+          "rule_id": {
+            "type": "string",
+            "description": "触发的规则 ID",
+            "examples": ["SR-001", "SR-002"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"],
+            "description": "严重程度"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "prompt_injection",
+              "dangerous_shell",
+              "credential_access",
+              "hardcoded_secret",
+              "remote_code_execution",
+              "excessive_permission",
+              "network_access",
+              "dependency_risk",
+              "source_integrity",
+              "metadata_quality"
+            ],
+            "description": "风险分类"
+          },
+          "title": {
+            "type": "string",
+            "description": "发现项简述"
+          },
+          "description": {
+            "type": "string",
+            "description": "详细描述"
+          },
+          "location": {
+            "type": "object",
+            "required": ["file"],
+            "properties": {
+              "file": { "type": "string", "description": "文件路径" },
+              "line": { "type": "integer", "minimum": 1, "description": "起始行号" },
+              "column": { "type": "integer", "minimum": 1, "description": "起始列号" },
+              "end_line": { "type": "integer", "minimum": 1 },
+              "end_column": { "type": "integer", "minimum": 1 },
+              "snippet": { "type": "string", "description": "匹配到的代码片段（已脱敏）" }
+            },
+            "additionalProperties": false
+          },
+          "evidence": {
+            "type": "string",
+            "description": "证据说明"
+          },
+          "remediation": {
+            "type": "string",
+            "description": "修复建议"
+          },
+          "cwe_id": {
+            "type": "string",
+            "description": "关联的 CWE 编号"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total", "critical", "high", "medium", "low", "info"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "critical": { "type": "integer", "minimum": 0 },
+        "high": { "type": "integer", "minimum": 0 },
+        "medium": { "type": "integer", "minimum": 0 },
+        "low": { "type": "integer", "minimum": 0 },
+        "info": { "type": "integer", "minimum": 0 },
+        "pass_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "扫描通过率（百分比）"
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata_validation": {
+      "type": "object",
+      "properties": {
+        "valid": { "type": "boolean" },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": { "type": "string" },
+              "message": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "元数据校验结果"
+    },
+    "structure_check": {
+      "type": "object",
+      "properties": {
+        "valid": { "type": "boolean" },
+        "missing_files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "缺失的必要文件"
+        },
+        "extra_files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "可疑的额外文件"
+        }
+      },
+      "additionalProperties": false,
+      "description": "目录结构校验结果"
+    },
+    "dependency_check": {
+      "type": "object",
+      "properties": {
+        "total_dependencies": { "type": "integer", "minimum": 0 },
+        "known_vulnerabilities": { "type": "integer", "minimum": 0 },
+        "unlocked_versions": { "type": "integer", "minimum": 0 },
+        "suspicious_packages": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false,
+      "description": "依赖检查结果"
+    }
+  },
+  "additionalProperties": false
+}

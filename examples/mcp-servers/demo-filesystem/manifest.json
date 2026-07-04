@@ -1,0 +1,25 @@
+{
+  "name": "demo-filesystem",
+  "version": "1.0.0",
+  "description": "本地文件系统只读浏览 MCP Server — 仅支持列出目录和读取文本文件，无写入权限",
+  "type": "mcp_server",
+  "vendor": "TrustedAgentHub Examples",
+  "transport": "stdio",
+  "command": "python",
+  "args": ["./server.py"],
+  "tools": [
+    {
+      "name": "list_directory",
+      "description": "列出指定目录内容，返回文件/目录名、类型、大小和修改时间"
+    },
+    {
+      "name": "read_file",
+      "description": "读取文本文件内容，最多返回 200 行"
+    }
+  ],
+  "permissions": {
+    "filesystem": { "read": ["./", "~/"] },
+    "network": { "allowed": false },
+    "shell": { "allowed": false }
+  }
+}

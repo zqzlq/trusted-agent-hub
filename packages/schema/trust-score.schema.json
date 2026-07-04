@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trusted-agent-hub.dev/schemas/trust-score.schema.json",
+  "title": "Trust Score",
+  "description": "信任评分结果 Schema，由评分模型生成，供 Web 详情页和 CLI 安装前展示",
+  "type": "object",
+  "required": [
+    "score",
+    "package_name",
+    "version",
+    "calculated_at",
+    "model_version",
+    "dimensions",
+    "explanations"
+  ],
+  "properties": {
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "综合信任评分（0-100）"
+    },
+    "package_name": {
+      "type": "string",
+      "description": "能力包名称"
+    },
+    "version": {
+      "type": "string",
+      "description": "版本号"
+    },
+    "calculated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "评分计算时间"
+    },
+    "model_version": {
+      "type": "string",
+      "description": "评分模型版本"
+    },
+    "dimensions": {
+      "type": "object",
+      "required": [
+        "source_trust",
+        "author_reputation",
+        "metadata_completeness",
+        "permission_minimization",
+        "scan_results",
+        "manual_review",
+        "version_stability",
+        "user_feedback",
+        "signature_verifiability"
+      ],
+      "properties": {
+        "source_trust": {
+          "type": "object",
+          "required": ["score", "weight", "details"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "is_verified_owner": { "type": "boolean" },
+                "source_type": { "type": "string" },
+                "repo_age_days": { "type": "integer", "minimum": 0 },
+                "has_commit_hash": { "type": "boolean" },
+                "has_integrity_hash": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "来源可信度维度"
+        },
+        "author_reputation": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "packages_published": { "type": "integer", "minimum": 0 },
+                "avg_historical_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "violations_count": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "作者信誉维度"
+        },
+        "metadata_completeness": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "missing_required_fields": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "has_description": { "type": "boolean" },
+                "has_license": { "type": "boolean" },
+                "has_keywords": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "元数据完整度维度"
+        },
+        "permission_minimization": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "total_permissions": { "type": "integer", "minimum": 0 },
+                "high_risk_permissions": { "type": "integer", "minimum": 0 },
+                "unnecessary_permissions": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "权限最小化维度"
+        },
+        "scan_results": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "critical_findings": { "type": "integer", "minimum": 0 },
+                "high_findings": { "type": "integer", "minimum": 0 },
+                "medium_findings": { "type": "integer", "minimum": 0 },
+                "low_findings": { "type": "integer", "minimum": 0 },
+                "scan_pass_rate": { "type": "number", "minimum": 0, "maximum": 100 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "扫描结果维度"
+        },
+        "manual_review": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "review_status": {
+                  "type": "string",
+                  "enum": ["unreviewed", "approved", "rejected", "changes_requested"]
+                },
+                "reviewer_count": { "type": "integer", "minimum": 0 },
+                "last_reviewed_at": { "type": "string", "format": "date-time" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "人工审核维度"
+        },
+        "version_stability": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "total_versions": { "type": "integer", "minimum": 0 },
+                "is_stable": { "type": "boolean" },
+                "days_since_last_update": { "type": "integer", "minimum": 0 },
+                "breaking_changes_count": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "版本稳定性维度"
+        },
+        "user_feedback": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "avg_rating": { "type": "number", "minimum": 0, "maximum": 5 },
+                "total_ratings": { "type": "integer", "minimum": 0 },
+                "total_installs": { "type": "integer", "minimum": 0 },
+                "reports_count": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "用户反馈维度"
+        },
+        "signature_verifiability": {
+          "type": "object",
+          "required": ["score", "weight"],
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+            "details": {
+              "type": "object",
+              "properties": {
+                "has_signature": { "type": "boolean" },
+                "has_attestation": { "type": "boolean" },
+                "has_sbom": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "description": "签名可追溯维度"
+        }
+      },
+      "additionalProperties": false
+    },
+    "explanations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["dimension", "message", "deduction"],
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "description": "关联的评分维度"
+          },
+          "message": {
+            "type": "string",
+            "description": "扣分/加分说明"
+          },
+          "deduction": {
+            "type": "integer",
+            "description": "扣分分值（负数）或加分分值（正数）"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "支撑证据引用（如扫描 finding ID）"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "评分解释列表"
+    },
+    "risk_summary": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["trusted", "low_risk", "medium_risk", "high_risk", "untrusted"],
+          "description": "风险等级"
+        },
+        "top_risks": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "type": "string" },
+          "description": "Top N 主要风险点"
+        },
+        "install_recommendation": {
+          "type": "string",
+          "enum": ["safe", "review_recommended", "caution", "not_recommended", "blocked"],
+          "description": "安装建议"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "../../agent-package.schema.json",
+  "name": "code-review-skill",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "对 Pull Request 执行多维度代码审查，覆盖正确性、安全性、性能和可维护性，输出结构化审查报告",
+  "author": {
+    "name": "Alice CodeReview Team",
+    "email": "alice@example.com",
+    "url": "https://github.com/alice-dev"
+  },
+  "license": "MIT",
+  "source": {
+    "type": "github",
+    "repository_url": "https://github.com/alice-dev/code-review-skill",
+    "owner": "alice-dev",
+    "repo": "code-review-skill",
+    "ref_type": "tag",
+    "ref": "v1.0.0",
+    "commit_hash": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+    "verified_owner": true,
+    "stars": 128,
+    "last_commit_at": "2026-06-01T10:30:00Z"
+  },
+  "integrity": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "attestation_url": "https://github.com/alice-dev/code-review-skill/attestations/v1.0.0"
+  },
+  "compatibility": ["claude-code", "cursor"],
+  "keywords": ["code-review", "pull-request", "quality", "security"],
+  "category": "code-generation",
+  "homepage": "https://github.com/alice-dev/code-review-skill#readme",
+  "dependencies": {
+    "system": ["git"]
+  },
+  "permissions": {
+    "filesystem": {
+      "read": ["./"],
+      "write": ["./review-output/"],
+      "delete": false
+    },
+    "shell": {
+      "allowed": true,
+      "commands": ["git", "diff", "grep"],
+      "description": "需要 git 命令读取 diff 和代码变更信息"
+    },
+    "network": {
+      "allowed": false
+    },
+    "environment": {
+      "read": [],
+      "write": []
+    }
+  },
+  "installation": {
+    "method": "copy_directory",
+    "targets": [
+      {
+        "client": "claude-code",
+        "destination": "~/.claude/skills/code-review-skill/"
+      },
+      {
+        "client": "cursor",
+        "destination": "~/.cursor/skills/code-review-skill/"
+      }
+    ],
+    "post_install_message": "安装完成后，使用 /review-pr 命令触发代码审查。"
+  },
+  "skill_config": {
+    "skill_md_path": "./SKILL.md",
+    "model": "claude-sonnet-4",
+    "tools": ["Read", "Grep", "Glob", "Bash", "Write"],
+    "resources": ["./templates/"],
+    "references": ["./references/review-checklist.md"]
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "../../agent-package.schema.json",
+  "name": "dev-toolkit-plugin",
+  "version": "1.3.0",
+  "type": "plugin",
+  "description": "开发者工具箱插件，聚合代码审查 Skill、Git 命令、PR 管理 Agent 和本地文件搜索 MCP，提供一站式开发体验",
+  "author": {
+    "name": "DevTools Community",
+    "email": "community@devtools.io",
+    "url": "https://github.com/devtools-community"
+  },
+  "license": "MIT",
+  "source": {
+    "type": "github",
+    "repository_url": "https://github.com/devtools-community/dev-toolkit-plugin",
+    "owner": "devtools-community",
+    "repo": "dev-toolkit-plugin",
+    "ref_type": "tag",
+    "ref": "v1.3.0",
+    "commit_hash": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",
+    "verified_owner": true,
+    "stars": 312,
+    "last_commit_at": "2026-06-20T14:00:00Z"
+  },
+  "integrity": {
+    "sha256": "f5d4c3b2a1fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b801"
+  },
+  "compatibility": ["claude-code", "vscode", "cursor"],
+  "keywords": ["dev-tools", "code-review", "git", "pr", "productivity"],
+  "category": "productivity",
+  "homepage": "https://devtools.io/toolkit",
+  "dependencies": {
+    "system": ["git", "node"]
+  },
+  "permissions": {
+    "filesystem": {
+      "read": ["./"],
+      "write": ["./"],
+      "delete": false
+    },
+    "shell": {
+      "allowed": true,
+      "commands": ["git", "npm", "node"],
+      "description": "需要 git 和 npm 命令进行开发操作"
+    },
+    "network": {
+      "allowed": true,
+      "domains": ["api.github.com", "registry.npmjs.org"],
+      "description": "访问 GitHub API 获取 PR 信息，访问 npm registry"
+    },
+    "environment": {
+      "read": ["GITHUB_TOKEN", "NODE_ENV"],
+      "write": []
+    },
+    "credentials": {
+      "access": ["api_key"],
+      "description": "需要 GitHub token 访问 PR API"
+    }
+  },
+  "installation": {
+    "method": "copy_directory",
+    "targets": [
+      {
+        "client": "claude-code",
+        "destination": "~/.claude/plugins/dev-toolkit/",
+        "config_template": "{\n  \"plugins\": {\n    \"dev-toolkit\": {\n      \"enabled\": true,\n      \"settings\": ${settings}\n    }\n  }\n}"
+      }
+    ],
+    "post_install_message": "插件已安装。使用 /dev help 查看可用命令。"
+  },
+  "plugin_config": {
+    "components": {
+      "skills": ["./skills/code-review", "./skills/git-helper"],
+      "agents": ["./agents/pr-manager"],
+      "commands": ["./commands/review-pr", "./commands/create-branch", "./commands/sync-upstream"],
+      "mcp_servers": [
+        {
+          "name": "filesystem-search",
+          "command": "node",
+          "args": ["./mcp/filesystem-search/index.js"]
+        }
+      ]
+    },
+    "hooks": ["./hooks/pre-commit", "./hooks/post-checkout"],
+    "settings_schema": {
+      "type": "object",
+      "properties": {
+        "autoReview": { "type": "boolean", "default": true },
+        "reviewDepth": { "type": "string", "enum": ["quick", "standard", "deep"], "default": "standard" },
+        "gitDefaultBranch": { "type": "string", "default": "main" }
+      }
+    }
+  }
+}

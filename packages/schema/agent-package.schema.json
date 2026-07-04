@@ -1,0 +1,836 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trusted-agent-hub.dev/schemas/agent-package.schema.json",
+  "title": "Agent Package Metadata",
+  "description": "统一能力包元数据 Schema，覆盖 Skill、MCP Server、Plugin、Subagent、Command、Prompt 六种类型",
+  "type": "object",
+  "required": [
+    "name",
+    "version",
+    "type",
+    "description",
+    "author",
+    "license",
+    "source",
+    "integrity",
+    "compatibility",
+    "permissions",
+    "installation"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema 引用"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$",
+      "minLength": 3,
+      "maxLength": 64,
+      "description": "能力包唯一名称，kebab-case 格式",
+      "examples": ["code-review-skill", "postgres-mcp-server"]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+      "description": "SemVer 2.0 版本号",
+      "examples": ["1.0.0", "2.1.3-beta.1"]
+    },
+    "type": {
+      "type": "string",
+      "enum": ["skill", "mcp_server", "plugin", "subagent", "command", "prompt"],
+      "description": "能力包类型"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200,
+      "description": "一句话描述能力包的功能和用途"
+    },
+    "author": {
+      "type": "object",
+      "required": ["name", "email"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "作者姓名或组织名"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "description": "作者联系邮箱"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "作者主页或 GitHub 首页"
+        }
+      },
+      "additionalProperties": false
+    },
+    "license": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 64,
+      "description": "SPDX 许可证标识符，如 MIT, Apache-2.0, GPL-3.0",
+      "examples": ["MIT", "Apache-2.0", "GPL-3.0", "BSL-1.0"]
+    },
+    "source": {
+      "type": "object",
+      "required": ["type", "repository_url", "ref", "commit_hash"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["github", "npm", "pypi", "docker", "local_upload"],
+          "description": "来源类型"
+        },
+        "repository_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://",
+          "description": "仓库 HTTPS URL"
+        },
+        "owner": {
+          "type": "string",
+          "description": "仓库所有者（GitHub org 或 username）"
+        },
+        "repo": {
+          "type": "string",
+          "description": "仓库名称"
+        },
+        "ref_type": {
+          "type": "string",
+          "enum": ["branch", "tag", "commit", "release"],
+          "description": "引用的版本标识类型"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "tag 名 / branch 名 / release 名"
+        },
+        "commit_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$",
+          "description": "锁定的 40 字符 Git commit SHA"
+        },
+        "subdirectory": {
+          "type": "string",
+          "description": "monorepo 中子目录路径"
+        },
+        "release_asset_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "GitHub Release asset 下载 URL"
+        },
+        "verified_owner": {
+          "type": "boolean",
+          "default": false,
+          "description": "仓库所有者是否通过平台验证"
+        },
+        "stars": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "GitHub stars 数量（快照值）"
+        },
+        "last_commit_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "最后提交时间（ISO 8601）"
+        }
+      },
+      "additionalProperties": false,
+      "if": {
+        "properties": { "type": { "const": "github" } }
+      },
+      "then": {
+        "required": ["owner", "repo"]
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["sha256"],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "包内容 SHA256 校验值"
+        },
+        "signature": {
+          "type": "string",
+          "description": "PGP 签名或 Sigstore 签名"
+        },
+        "attestation_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "构建证明（attestation）URL"
+        },
+        "sbom_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "SBOM 文档 URL"
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "claude-code",
+          "claude-ai",
+          "cursor",
+          "vscode",
+          "mcp-client-generic",
+          "openai-agents",
+          "github-copilot",
+          "windsurf",
+          "cline"
+        ]
+      },
+      "description": "适配的客户端/平台列表"
+    },
+    "keywords": {
+      "type": "array",
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 30
+      },
+      "description": "搜索关键词"
+    },
+    "category": {
+      "type": "string",
+      "description": "功能分类，如 code-generation, security, data, productivity, devops, testing",
+      "examples": ["code-generation", "security", "data", "testing", "devops"]
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "description": "项目主页或文档 URL"
+    },
+    "icon": {
+      "type": "string",
+      "description": "图标 URL 或 data URI"
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "npm": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "pip": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "system": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "系统命令依赖，如 git, docker, python, node",
+          "uniqueItems": true
+        },
+        "docker": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["image"],
+            "properties": {
+              "image": { "type": "string" },
+              "tag": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "mcp_servers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string", "format": "uri" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "permissions": {
+      "type": "object",
+      "required": ["filesystem", "shell", "network", "environment"],
+      "properties": {
+        "filesystem": {
+          "type": "object",
+          "required": ["read", "write"],
+          "properties": {
+            "read": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "可读路径列表，空数组表示不需要"
+            },
+            "write": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "可写路径列表，空数组表示不需要"
+            },
+            "delete": {
+              "type": "boolean",
+              "default": false,
+              "description": "是否允许删除文件"
+            }
+          },
+          "additionalProperties": false
+        },
+        "shell": {
+          "type": "object",
+          "required": ["allowed"],
+          "properties": {
+            "allowed": {
+              "type": "boolean",
+              "description": "是否允许执行 shell 命令"
+            },
+            "commands": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "允许的 shell 命令白名单，空数组 = 任意命令"
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "说明为什么需要 shell 权限"
+            }
+          },
+          "additionalProperties": false
+        },
+        "network": {
+          "type": "object",
+          "required": ["allowed"],
+          "properties": {
+            "allowed": {
+              "type": "boolean",
+              "description": "是否允许网络访问"
+            },
+            "domains": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "允许访问的域名白名单，空数组 = 任意域名"
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "read": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "可读取的环境变量名列表"
+            },
+            "write": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "可写入的环境变量名列表"
+            }
+          },
+          "additionalProperties": false
+        },
+        "credentials": {
+          "type": "object",
+          "properties": {
+            "access": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["api_key", "ssh_key", "token", "password", "oauth_token"]
+              },
+              "description": "需要访问的凭据类型"
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "allowed": { "type": "boolean" },
+            "drivers": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "sqlite, postgresql, mysql, mongodb 等"
+            },
+            "description": { "type": "string", "maxLength": 200 }
+          },
+          "additionalProperties": false
+        },
+        "browser": {
+          "type": "object",
+          "properties": {
+            "allowed": { "type": "boolean" },
+            "description": { "type": "string", "maxLength": 200 }
+          },
+          "additionalProperties": false
+        },
+        "external_services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string", "format": "uri" },
+              "description": { "type": "string", "maxLength": 200 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "installation": {
+      "type": "object",
+      "required": ["method", "targets"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["copy_directory", "npm_install", "pip_install", "docker_run", "manual_steps"],
+          "description": "安装方式"
+        },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["client", "destination"],
+            "properties": {
+              "client": {
+                "type": "string",
+                "enum": [
+                  "claude-code",
+                  "cursor",
+                  "vscode",
+                  "mcp-client-generic",
+                  "openai-agents",
+                  "github-copilot",
+                  "windsurf",
+                  "cline"
+                ]
+              },
+              "destination": {
+                "type": "string",
+                "description": "安装目标路径或配置键路径"
+              },
+              "config_template": {
+                "type": "string",
+                "description": "配置模板，支持 ${name}, ${version} 等占位符"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "command": {
+          "type": "string",
+          "description": "安装命令或说明（method=manual_steps 时强烈建议提供）"
+        },
+        "pre_install_message": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "安装前展示给用户的提示信息"
+        },
+        "post_install_message": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "安装后展示给用户的提示信息"
+        }
+      },
+      "additionalProperties": false
+    },
+    "skill_config": {
+      "type": "object",
+      "required": ["skill_md_path"],
+      "properties": {
+        "skill_md_path": {
+          "type": "string",
+          "description": "SKILL.md 文件路径"
+        },
+        "model": {
+          "type": "string",
+          "description": "推荐的模型名称"
+        },
+        "tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          },
+          "description": "声明使用的工具列表"
+        },
+        "resources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "资源文件或目录路径列表"
+        },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "参考文档路径列表"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mcp_server_config": {
+      "type": "object",
+      "required": ["transport", "command"],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "enum": ["stdio", "sse", "streamable-http"],
+          "description": "MCP 传输协议"
+        },
+        "command": {
+          "type": "string",
+          "description": "启动命令，如 python / node / npx"
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "启动命令参数"
+        },
+        "env": {
+          "type": "object",
+          "description": "需要的环境变量（仅声明名称，不包含值）",
+          "additionalProperties": {
+            "type": "string",
+            "description": "环境变量说明"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "description": "提供的 MCP 工具列表"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["uri", "description"],
+            "properties": {
+              "uri": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "description": "提供的 MCP 资源列表"
+        },
+        "prompts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "description": "提供的 MCP Prompt 模板列表"
+        },
+        "remote_endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "远程服务端点 URL（transport=sse 时必填）"
+        }
+      },
+      "additionalProperties": false,
+      "if": {
+        "properties": { "transport": { "const": "sse" } }
+      },
+      "then": {
+        "required": ["remote_endpoint"]
+      }
+    },
+    "plugin_config": {
+      "type": "object",
+      "properties": {
+        "components": {
+          "type": "object",
+          "properties": {
+            "skills": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "内嵌 Skill 路径列表"
+            },
+            "agents": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "内嵌 Agent 路径列表"
+            },
+            "commands": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "内嵌 Command 路径列表"
+            },
+            "mcp_servers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "command"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "command": { "type": "string" },
+                  "args": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "hooks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "生命周期 hooks（如 pre-install、post-install）"
+        },
+        "settings_schema": {
+          "type": "object",
+          "description": "用户可配置项的 JSON Schema",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "subagent_config": {
+      "type": "object",
+      "required": ["system_prompt_path", "tools"],
+      "properties": {
+        "system_prompt_path": {
+          "type": "string",
+          "description": "系统提示文件路径"
+        },
+        "tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "允许使用的工具列表"
+        },
+        "model": {
+          "type": "string",
+          "description": "推荐的模型名称"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["project", "user", "global"],
+          "default": "project",
+          "description": "作用范围"
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 10,
+          "description": "最大迭代次数"
+        },
+        "interaction_mode": {
+          "type": "string",
+          "enum": ["autonomous", "supervised"],
+          "default": "supervised",
+          "description": "交互模式"
+        }
+      },
+      "additionalProperties": false
+    },
+    "command_config": {
+      "type": "object",
+      "required": ["command_name", "executor"],
+      "properties": {
+        "command_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "命令名，如 review-pr"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["string", "number", "boolean", "file", "directory"]
+              },
+              "required": { "type": "boolean", "default": false },
+              "default": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["project", "user", "global"],
+          "default": "project"
+        },
+        "executor": {
+          "type": "string",
+          "enum": ["script", "prompt", "skill", "inline"],
+          "description": "执行方式"
+        },
+        "executor_path": {
+          "type": "string",
+          "description": "执行入口文件路径"
+        }
+      },
+      "additionalProperties": false
+    },
+    "prompt_config": {
+      "type": "object",
+      "required": ["prompt_path", "role"],
+      "properties": {
+        "prompt_path": {
+          "type": "string",
+          "description": "模板文件路径"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string", "enum": ["string", "number", "boolean"] },
+              "required": { "type": "boolean", "default": false },
+              "default": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "role": {
+          "type": "string",
+          "enum": ["system", "user", "assistant", "tool"],
+          "description": "Prompt 角色"
+        },
+        "escape_strategy": {
+          "type": "string",
+          "enum": ["none", "html", "markdown_code_fence"],
+          "default": "none",
+          "description": "变量转义策略"
+        }
+      },
+      "additionalProperties": false
+    },
+    "entry_points": {
+      "type": "object",
+      "properties": {
+        "main": {
+          "type": "string",
+          "description": "主入口文件路径"
+        },
+        "config": {
+          "type": "string",
+          "description": "配置文件路径"
+        },
+        "scripts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "脚本文件路径列表"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "const": "skill" } }
+      },
+      "then": {
+        "required": ["skill_config"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "mcp_server" } }
+      },
+      "then": {
+        "required": ["mcp_server_config"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "plugin" } }
+      },
+      "then": {
+        "required": ["plugin_config"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "subagent" } }
+      },
+      "then": {
+        "required": ["subagent_config"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "command" } }
+      },
+      "then": {
+        "required": ["command_config"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "prompt" } }
+      },
+      "then": {
+        "required": ["prompt_config"]
+      }
+    }
+  ],
+  "additionalProperties": false
+}
