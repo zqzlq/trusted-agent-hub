@@ -1,0 +1,9 @@
+[project]
+name = "trusted-agent-hub-api"
+version = "0.1.0"
+description = "TrustedAgentHub Backend API"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.115.0", "uvicorn[standard]>=0.30.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27.0"]

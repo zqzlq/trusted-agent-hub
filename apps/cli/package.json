@@ -1,0 +1,20 @@
+{
+  "name": "trusted-agent-hub",
+  "version": "0.1.0",
+  "description": "TrustedAgentHub CLI — registry for AI agent capability packages (Skills, MCP Servers, Plugins, and more)",
+  "bin": "./dist/apps/cli/src/cli.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

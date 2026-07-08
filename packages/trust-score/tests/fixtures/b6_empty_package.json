@@ -1,0 +1,61 @@
+{
+  "description": "B6: empty package — opaque source, minimal metadata → medium_risk",
+  "expected_level": "medium_risk",
+  "package_metadata": {
+    "name": "empty-package",
+    "version": "0.0.1",
+    "type": "skill",
+    "description": "A minimal package with almost no provenance information",
+    "author": {
+      "name": "anonymous",
+      "email": "anon@example.com"
+    },
+    "license": "MIT",
+    "source": {
+      "type": "local_upload",
+      "repository_url": "",
+      "ref_type": "",
+      "ref": "",
+      "commit_hash": "",
+      "verified_owner": false
+    },
+    "integrity": {
+      "sha256": ""
+    },
+    "compatibility": ["claude-code"],
+    "keywords": ["minimal"],
+    "category": "devops",
+    "permissions": {
+      "filesystem": {
+        "read": ["./"],
+        "write": [],
+        "delete": false
+      },
+      "shell": {
+        "allowed": false
+      },
+      "network": {
+        "allowed": false
+      }
+    },
+    "installation": {
+      "method": "copy_directory",
+      "targets": [
+        {"client": "claude-code", "destination": "~/.claude/skills/empty-package/"}
+      ]
+    },
+    "skill_config": {
+      "skill_md_path": "./SKILL.md"
+    }
+  },
+  "scan_report": null,
+  "author_history": {
+    "packages_published": 0,
+    "avg_historical_score": 0,
+    "violations_count": 0
+  },
+  "review_records": {
+    "status": "unreviewed",
+    "reviewer_count": 0
+  }
+}
