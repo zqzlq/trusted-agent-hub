@@ -8,7 +8,7 @@ for API presentation.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Dict, List, Any, Optional, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -31,7 +31,7 @@ class Author(BaseModel):
 
     name: str
     email: str
-    url: str | None = None
+    url: Optional[str] = None
 
 
 class Source(BaseModel):
@@ -39,90 +39,90 @@ class Source(BaseModel):
 
     type: str
     repository_url: str
-    owner: str | None = None
-    repo: str | None = None
-    ref_type: str | None = None
+    owner: Optional[str] = None
+    repo: Optional[str] = None
+    ref_type: Optional[str] = None
     ref: str
     commit_hash: str
     verified_owner: bool = False
-    stars: int | None = None
-    last_commit_at: str | None = None
+    stars: Optional[int] = None
+    last_commit_at: Optional[str] = None
 
 
 class Integrity(BaseModel):
     """Integrity / verification information."""
 
     sha256: str
-    signature: str | None = None
-    attestation_url: str | None = None
-    sbom_url: str | None = None
+    signature: Optional[str] = None
+    attestation_url: Optional[str] = None
+    sbom_url: Optional[str] = None
 
 
 class FilesystemPermissions(BaseModel):
-    read: list[str] = Field(default_factory=list)
-    write: list[str] = Field(default_factory=list)
+    read: List[str] = Field(default_factory=list)
+    write: List[str] = Field(default_factory=list)
     delete: bool = False
 
 
 class ShellPermissions(BaseModel):
     allowed: bool = False
-    commands: list[str] = Field(default_factory=list)
-    description: str | None = None
+    commands: List[str] = Field(default_factory=list)
+    description: Optional[str] = None
 
 
 class NetworkPermissions(BaseModel):
     allowed: bool = False
-    domains: list[str] = Field(default_factory=list)
-    description: str | None = None
+    domains: List[str] = Field(default_factory=list)
+    description: Optional[str] = None
 
 
 class EnvironmentPermissions(BaseModel):
-    read: list[str] = Field(default_factory=list)
-    write: list[str] = Field(default_factory=list)
+    read: List[str] = Field(default_factory=list)
+    write: List[str] = Field(default_factory=list)
 
 
 class CredentialsPermissions(BaseModel):
-    access: list[str] = Field(default_factory=list)
-    description: str | None = None
+    access: List[str] = Field(default_factory=list)
+    description: Optional[str] = None
 
 
 class Permissions(BaseModel):
-    filesystem: FilesystemPermissions | None = None
-    shell: ShellPermissions | None = None
-    network: NetworkPermissions | None = None
-    environment: EnvironmentPermissions | None = None
-    credentials: CredentialsPermissions | None = None
-    database: dict[str, Any] | None = None
-    browser: dict[str, Any] | None = None
-    external_services: list[Any] | None = None
+    filesystem: Optional[FilesystemPermissions] = None
+    shell: Optional[ShellPermissions] = None
+    network: Optional[NetworkPermissions] = None
+    environment: Optional[EnvironmentPermissions] = None
+    credentials: Optional[CredentialsPermissions] = None
+    database: Optional[Dict[str, Any]] = None
+    browser: Optional[Dict[str, Any]] = None
+    external_services: Optional[List[Any]] = None
 
 
 class InstallTarget(BaseModel):
     client: str
     destination: str
-    config_template: str | None = None
+    config_template: Optional[str] = None
 
 
 class Installation(BaseModel):
     method: str
-    targets: list[InstallTarget] = Field(default_factory=list)
-    command: str | None = None
-    pre_install_message: str | None = None
-    post_install_message: str | None = None
+    targets: List[InstallTarget] = Field(default_factory=list)
+    command: Optional[str] = None
+    pre_install_message: Optional[str] = None
+    post_install_message: Optional[str] = None
 
 
 class Dependencies(BaseModel):
-    npm: list[dict[str, str]] | None = None
-    pip: list[dict[str, str]] | None = None
-    system: list[str] | None = None
-    docker: list[dict[str, str]] | None = None
-    mcp_servers: list[dict[str, str]] | None = None
+    npm: Optional[List[Dict[str, str]]] = None
+    pip: Optional[List[Dict[str, str]]] = None
+    system: Optional[List[str]] = None
+    docker: Optional[List[Dict[str, str]]] = None
+    mcp_servers: Optional[List[Dict[str, str]]] = None
 
 
 class EntryPoints(BaseModel):
-    main: str | None = None
-    config: str | None = None
-    scripts: list[str] | None = None
+    main: Optional[str] = None
+    config: Optional[str] = None
+    scripts: Optional[List[str]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -133,29 +133,29 @@ class EntryPoints(BaseModel):
 class TrustScoreDimension(BaseModel):
     score: float
     weight: float
-    details: dict[str, Any] | None = None
+    details: Optional[Dict[str, Any]] = None
 
 
 class TrustScoreExplanation(BaseModel):
     dimension: str
     message: str
-    deduction: float | None = None
-    evidence: str | None = None
+    deduction: Optional[float] = None
+    evidence: Optional[str] = None
 
 
 class RiskSummary(BaseModel):
     level: str
-    top_risks: list[str] = Field(default_factory=list)
+    top_risks: List[str] = Field(default_factory=list)
     install_recommendation: str
 
 
 class TrustScore(BaseModel):
     score: float
-    model_version: str | None = None
-    dimensions: dict[str, TrustScoreDimension] | None = None
-    explanations: list[TrustScoreExplanation] | None = None
-    risk_summary: RiskSummary | None = None
-    calculated_at: str | None = None
+    model_version: Optional[str] = None
+    dimensions: Optional[Dict[str, TrustScoreDimension]] = None
+    explanations: Optional[List[TrustScoreExplanation]] = None
+    risk_summary: Optional[RiskSummary] = None
+    calculated_at: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -165,26 +165,26 @@ class TrustScore(BaseModel):
 
 class ScanFinding(BaseModel):
     id: str
-    rule_id: str | None = None
+    rule_id: Optional[str] = None
     severity: str
     category: str
     title: str
     description: str
-    location: dict[str, Any] | None = None
-    remediation: str | None = None
-    cwe_id: str | None = None
+    location: Optional[Dict[str, Any]] = None
+    remediation: Optional[str] = None
+    cwe_id: Optional[str] = None
 
 
 class ScanReport(BaseModel):
     scan_id: str
     scanner_version: str
-    duration_ms: int | None = None
-    summary: dict[str, Any] | None = None
-    findings: list[ScanFinding] | None = None
-    metadata_validation: dict[str, Any] | None = None
-    structure_check: dict[str, Any] | None = None
-    dependency_check: dict[str, Any] | None = None
-    scanned_at: str | None = None
+    duration_ms: Optional[int] = None
+    summary: Optional[Dict[str, Any]] = None
+    findings: Optional[List[ScanFinding]] = None
+    metadata_validation: Optional[Dict[str, Any]] = None
+    structure_check: Optional[Dict[str, Any]] = None
+    dependency_check: Optional[Dict[str, Any]] = None
+    scanned_at: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -199,20 +199,20 @@ class PackageSummary(BaseModel):
     name: str
     description: str
     type: str
-    license: str | None = None
-    keywords: list[str] = Field(default_factory=list)
-    category: str | None = None
-    homepage: str | None = None
-    icon_url: str | None = None
-    owner: Owner | None = None
+    license: Optional[str] = None
+    keywords: List[str] = Field(default_factory=list)
+    category: Optional[str] = None
+    homepage: Optional[str] = None
+    icon_url: Optional[str] = None
+    owner: Optional[Owner] = None
     latest_version: str
     status: str
-    trust_score: float | None = None
-    risk_level: str | None = None
+    trust_score: Optional[float] = None
+    risk_level: Optional[str] = None
     install_count: int = 0
-    avg_rating: float | None = None
-    created_at: str | None = None
-    updated_at: str | None = None
+    avg_rating: Optional[float] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class PackageDetail(BaseModel):
@@ -222,20 +222,20 @@ class PackageDetail(BaseModel):
     name: str
     description: str
     type: str
-    license: str | None = None
-    keywords: list[str] = Field(default_factory=list)
-    category: str | None = None
-    homepage: str | None = None
-    icon_url: str | None = None
-    owner: Owner | None = None
+    license: Optional[str] = None
+    keywords: List[str] = Field(default_factory=list)
+    category: Optional[str] = None
+    homepage: Optional[str] = None
+    icon_url: Optional[str] = None
+    owner: Optional[Owner] = None
     latest_version: str
     status: str
-    trust_score: float | None = None
-    risk_level: str | None = None
+    trust_score: Optional[float] = None
+    risk_level: Optional[str] = None
     install_count: int = 0
-    avg_rating: float | None = None
-    created_at: str | None = None
-    updated_at: str | None = None
+    avg_rating: Optional[float] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class VersionSummary(BaseModel):
@@ -244,9 +244,9 @@ class VersionSummary(BaseModel):
     id: str
     version: str
     status: str
-    submitted_at: str | None = None
-    created_at: str | None = None
-    trust_score: float | None = None
+    submitted_at: Optional[str] = None
+    created_at: Optional[str] = None
+    trust_score: Optional[float] = None
 
 
 class VersionDetail(BaseModel):
@@ -255,21 +255,21 @@ class VersionDetail(BaseModel):
     id: str
     package_id: str
     version: str
-    author: Author | None = None
-    source: Source | None = None
-    integrity: Integrity | None = None
-    compatibility: list[str] = Field(default_factory=list)
-    permissions: Permissions | None = None
-    installation: Installation | None = None
-    type_config: dict[str, Any] | None = None
-    dependencies: Dependencies | None = None
-    entry_points: EntryPoints | None = None
+    author: Optional[Author] = None
+    source: Optional[Source] = None
+    integrity: Optional[Integrity] = None
+    compatibility: List[str] = Field(default_factory=list)
+    permissions: Optional[Permissions] = None
+    installation: Optional[Installation] = None
+    type_config: Optional[Dict[str, Any]] = None
+    dependencies: Optional[Dependencies] = None
+    entry_points: Optional[EntryPoints] = None
     status: str
-    submitted_at: str | None = None
-    published_at: str | None = None
-    created_at: str | None = None
-    trust_score: TrustScore | None = None
-    scan_report: ScanReport | None = None
+    submitted_at: Optional[str] = None
+    published_at: Optional[str] = None
+    created_at: Optional[str] = None
+    trust_score: Optional[TrustScore] = None
+    scan_report: Optional[ScanReport] = None
 
 
 class InstallManifest(BaseModel):
@@ -278,14 +278,14 @@ class InstallManifest(BaseModel):
     package_name: str
     version: str
     method: str
-    targets: list[InstallTarget] = Field(default_factory=list)
-    command: str | None = None
-    dependencies: Dependencies | None = None
-    compatibility: list[str] = Field(default_factory=list)
-    pre_install_warnings: list[str] = Field(default_factory=list)
-    pre_install_message: str | None = None
-    post_install_message: str | None = None
-    trust_score: TrustScoreResponse | None = None
+    targets: List[InstallTarget] = Field(default_factory=list)
+    command: Optional[str] = None
+    dependencies: Optional[Dependencies] = None
+    compatibility: List[str] = Field(default_factory=list)
+    pre_install_warnings: List[str] = Field(default_factory=list)
+    pre_install_message: Optional[str] = None
+    post_install_message: Optional[str] = None
+    trust_score: Optional[TrustScoreResponse] = None
 
 
 class TrustScoreResponse(BaseModel):
@@ -293,11 +293,11 @@ class TrustScoreResponse(BaseModel):
 
     version_id: str
     score: float
-    level: str | None = None
-    recommendation: str | None = None
-    dimensions: dict[str, Any] | None = None
-    explanations: list[dict[str, Any]] | None = None
-    calculated_at: str | None = None
+    level: Optional[str] = None
+    recommendation: Optional[str] = None
+    dimensions: Optional[Dict[str, Any]] = None
+    explanations: Optional[List[Dict[str, Any]]] = None
+    calculated_at: Optional[str] = None
 
 
 class PackageStats(BaseModel):
@@ -305,10 +305,10 @@ class PackageStats(BaseModel):
 
     package_name: str
     install_count: int = 0
-    avg_rating: float | None = None
+    avg_rating: Optional[float] = None
     total_versions: int = 0
-    latest_version: str | None = None
-    status: str | None = None
+    latest_version: Optional[str] = None
+    status: Optional[str] = None
 
 
 T = TypeVar("T")
@@ -317,7 +317,7 @@ T = TypeVar("T")
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated list wrapper."""
 
-    items: list[T] = Field(default_factory=list)
+    items: List[T] = Field(default_factory=list)
     total: int = 0
     page: int = 1
     limit: int = 20

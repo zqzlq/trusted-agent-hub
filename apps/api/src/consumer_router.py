@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any
+from typing import Dict, List, Any, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -32,7 +32,7 @@ router = APIRouter(tags=["consumer"])
 # Sort helpers
 # ---------------------------------------------------------------------------
 
-_SORT_FIELDS: dict[str, str] = {
+_SORT_FIELDS: Dict[str, str] = {
     "trust_score": "trust_score",
     "updated_at": "updated_at",
     "install_count": "install_count",
@@ -41,8 +41,8 @@ _SORT_FIELDS: dict[str, str] = {
 
 
 def _apply_sort(
-    packages: list[dict[str, Any]], sort: str
-) -> list[dict[str, Any]]:
+    packages: List[Dict[str, Any]], sort: str
+) -> List[Dict[str, Any]]:
     """Sort packages in-place (stable) by the given field."""
     key = _SORT_FIELDS.get(sort, "updated_at")
     reverse = True  # default: newest / highest first
@@ -52,7 +52,7 @@ def _apply_sort(
         reverse = False
 
     # Treat None as the lowest value for numeric sorts
-    def sort_key(pkg: dict[str, Any]) -> Any:
+    def sort_key(pkg: Dict[str, Any]) -> Any:
         val = pkg.get(key)
         if val is None:
             return (0,)  # sort None last when descending
@@ -69,7 +69,7 @@ def _apply_sort(
 # ---------------------------------------------------------------------------
 
 
-def _matches_query(pkg: dict[str, Any], q: str) -> bool:
+def _matches_query(pkg: Dict[str, Any], q: str) -> bool:
     """Check whether package name, description, or keywords contain `q`.
 
     Matching is case-insensitive.
@@ -92,21 +92,21 @@ def _matches_query(pkg: dict[str, Any], q: str) -> bool:
 
 @router.get("/packages", response_model=PaginatedResponse[PackageSummary])
 def list_packages(
-    q: str | None = Query(default=None, description="Keyword search across name, description, keywords"),
-    type: str | None = Query(default=None, description="Filter by package type (skill, mcp_server, etc.)"),
-    status: str | None = Query(default=None, description="Filter by version status"),
-    client: str | None = Query(default=None, description="Filter by client compatibility"),
+    q: Optional[str] = Query(default=None, description="Keyword search across name, description, keywords"),
+    type: Optional[str] = Query(default=None, description="Filter by package type (skill, mcp_server, etc.)"),
+    status: Optional[str] = Query(default=None, description="Filter by version status"),
+    client: Optional[str] = Query(default=None, description="Filter by client compatibility"),
     sort: str = Query(default="updated_at", description="Sort field: trust_score, updated_at, install_count, name"),
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     limit: int = Query(default=20, ge=1, le=100, description="Items per page"),
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """List and search published packages.
 
     Supports keyword search, type/status/client filtering, sorting, and
     pagination.  Only packages visible to consumers are returned.
     """
     # Collect all packages
-    items: list[dict[str, Any]] = _data.get_all_packages()
+    items: List[Dict[str, Any]] = _data.get_all_packages()
 
     # --- Filtering ---
     if q:
@@ -144,12 +144,12 @@ def list_packages(
     }
 
 
-def _dict_to_summary(pkg: dict[str, Any]) -> PackageSummary:
+def _dict_to_summary(pkg: Dict[str, Any]) -> PackageSummary:
     """Convert a raw package dict to a PackageSummary model."""
-    return PackageSummary(**{k: v for k, v in pkg.items() if k in PackageSummary.model_fields})
+    return PackageSummary(**{k: v for k, v in pkg.items() if k in PackageSummary.__fields__})
 
 
-def _package_supports_client(pkg: dict[str, Any], client: str) -> bool:
+def _package_supports_client(pkg: Dict[str, Any], client: str) -> bool:
     """Check whether a package is compatible with the given client.
 
     We look through available version details for the package; if no
@@ -179,7 +179,7 @@ def _package_supports_client(pkg: dict[str, Any], client: str) -> bool:
 
 
 @router.get("/packages/{name}", response_model=PackageDetail)
-def get_package(name: str) -> dict[str, Any]:
+def get_package(name: str) -> Dict[str, Any]:
     """Get package detail by its unique name.
 
     Returns 404 if no package with the given name exists.
@@ -190,7 +190,7 @@ def get_package(name: str) -> dict[str, Any]:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Package '{name}' not found",
         )
-    return {k: v for k, v in pkg.items() if k in PackageDetail.model_fields}
+    return {k: v for k, v in pkg.items() if k in PackageDetail.__fields__}
 
 
 # ---------------------------------------------------------------------------
@@ -198,8 +198,8 @@ def get_package(name: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@router.get("/packages/{name}/versions", response_model=list[VersionSummary])
-def list_versions(name: str) -> list[dict[str, Any]]:
+@router.get("/packages/{name}/versions", response_model=List[VersionSummary])
+def list_versions(name: str) -> List[Dict[str, Any]]:
     """List all versions for a package.
 
     Returns an empty list if the package does not exist.
@@ -219,7 +219,7 @@ def list_versions(name: str) -> list[dict[str, Any]]:
 
 
 @router.get("/packages/{name}/versions/{version}", response_model=VersionDetail)
-def get_version(name: str, version: str) -> dict[str, Any]:
+def get_version(name: str, version: str) -> Dict[str, Any]:
     """Get full detail for a specific version of a package.
 
     Reads from the dedicated version file if available; otherwise returns
@@ -246,8 +246,8 @@ def get_version(name: str, version: str) -> dict[str, Any]:
 
 
 def _build_synthetic_version_detail(
-    pkg: dict[str, Any], version: str
-) -> dict[str, Any]:
+    pkg: Dict[str, Any], version: str
+) -> Dict[str, Any]:
     """Build a minimal VersionDetail when no dedicated version file exists."""
     return {
         "id": f"{pkg.get('id', '')}-{version}",
@@ -270,8 +270,8 @@ def _build_synthetic_version_detail(
 @router.get("/packages/{name}/install", response_model=InstallManifest)
 def get_install_manifest(
     name: str,
-    version: str | None = Query(default=None, description="Specific version; defaults to latest"),
-) -> dict[str, Any]:
+    version: Optional[str] = Query(default=None, description="Specific version; defaults to latest"),
+) -> Dict[str, Any]:
     """Get the install manifest for a package.
 
     Returns installation configuration, target paths, dependencies, and
@@ -292,7 +292,7 @@ def get_install_manifest(
 
     # --- Pre-install warnings based on risk level ---
     risk_level = pkg.get("risk_level", "unknown")
-    pre_install_warnings: list[str] = []
+    pre_install_warnings: List[str] = []
     if risk_level == "high_risk":
         pre_install_warnings.append(
             "This package requests extensive permissions. Review carefully before installing."
@@ -307,7 +307,7 @@ def get_install_manifest(
         )
 
     # --- Trust score summary ---
-    trust: dict[str, Any] | None = None
+    trust: Optional[Dict[str, Any]] = None
     if detail and detail.get("trust_score"):
         ts = detail["trust_score"]
         risk_summary = ts.get("risk_summary", {})
@@ -343,7 +343,7 @@ def get_install_manifest(
 
 
 @router.get("/trust-scores/{version_id}", response_model=TrustScoreResponse)
-def get_trust_score(version_id: str) -> dict[str, Any]:
+def get_trust_score(version_id: str) -> Dict[str, Any]:
     """Get the trust score for a specific version by version ID.
 
     Returns mock trust score data if available, or a default structure
@@ -370,7 +370,7 @@ def get_trust_score(version_id: str) -> dict[str, Any]:
     return _default_trust_score(version_id)
 
 
-def _default_trust_score(version_id: str) -> dict[str, Any]:
+def _default_trust_score(version_id: str) -> Dict[str, Any]:
     """Return a default trust score structure for versions without computed scores."""
     return {
         "version_id": version_id,
@@ -389,7 +389,7 @@ def _default_trust_score(version_id: str) -> dict[str, Any]:
 
 
 @router.get("/stats/packages/{name}", response_model=PackageStats)
-def get_package_stats(name: str) -> dict[str, Any]:
+def get_package_stats(name: str) -> Dict[str, Any]:
     """Get install/download statistics for a package."""
     pkg = _data.get_package_by_name(name)
     if pkg is None:

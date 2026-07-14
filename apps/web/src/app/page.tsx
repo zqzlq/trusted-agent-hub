@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { packages } from '@/data/packages';
 import SearchBar from '@/components/SearchBar';
+import ScannerForm from '@/components/ScannerForm';
 import PackageCard from '@/components/PackageCard';
 
 export default function HomePage() {
@@ -37,6 +38,8 @@ export default function HomePage() {
         onQueryChange={setQuery}
         onTypeChange={setActiveType}
       />
+
+      <ScannerForm />
 
       <p className="results-meta">
         {filtered.length} package{filtered.length !== 1 ? 's' : ''} found
