@@ -32,6 +32,7 @@ _API_SRC_DIR = Path(__file__).resolve().parent.parent  # apps/api/src/
 _PROJECT_ROOT = _API_SRC_DIR.parent.parent.parent  # repo root
 _REPORTS_DIR = _PROJECT_ROOT / "packages" / "schema" / "reports"
 _SCANNER_PATH = _PROJECT_ROOT / "scanners" / "risk-scanner" / "scanner.py"
+_EXTRACTOR_PATH = _PROJECT_ROOT / "packages" / "schema" / "extract_skills.py"
 
 # 确保 reports 目录存在
 _REPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -194,7 +195,7 @@ def _run_scan_task(scan_id: str, source: str, *, is_local: bool = False) -> None
         calculate_trust_score = _load_scorer()
 
         # 构建 package_metadata（从扫描器的 metadata 或 scan_report 中提取）
-        package_metadata = _build_package_metadata(scan_report, tmp_dir)
+        package_metadata = _build_package_metadata(scan_report, tmp_dir, repo_url=source)
 
         trust_score_result = calculate_trust_score(
             package_metadata=package_metadata,
@@ -245,13 +246,37 @@ def _run_scan_task(scan_id: str, source: str, *, is_local: bool = False) -> None
         if "tmp_dir" in locals() and not is_local:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
-def _build_package_metadata(scan_report: Dict[str, Any], target_dir: str) -> Dict[str, Any]:
+def _build_package_metadata(scan_report: Dict[str, Any], target_dir: str, repo_url: str = "") -> Dict[str, Any]:
     """从扫描报告和目标目录构建 package_metadata 用于评分引擎。
 
-    尝试加载 SKILL.md / manifest.json / plugin.json 来丰富元数据。
+    优先使用 extract_skills 模块进行完整提取（11 个必填字段、依赖解析、
+    权限推断、分类推断）；失败时回退到原始简易逻辑。
     """
     target = Path(target_dir)
 
+    # ── 优先：使用 extract_skills 完整提取 ──
+    try:
+        # 动态加载 extract_skills 模块（仅首次）
+        if not hasattr(sys.modules.get("extract_skills", None), "extract_single_skill"):
+            spec = importlib.util.spec_from_file_location(
+                "extract_skills", str(_EXTRACTOR_PATH))
+            if spec and spec.loader:
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                sys.modules["extract_skills"] = mod
+
+        extract_single_skill = sys.modules["extract_skills"].extract_single_skill
+        data = extract_single_skill(target, repo_url=repo_url)
+        if data:
+            print(f"[TAH-trust]     extract_skills 成功提取: name={data.get('name')}, "
+                  f"version={data.get('version')}, category={data.get('category')}")
+            return data
+    except (ValueError, FileNotFoundError) as e:
+        print(f"[TAH-trust]     extract_skills 跳过（{e}），回退到简易提取")
+    except Exception as e:
+        print(f"[TAH-trust]     extract_skills 失败（{e}），回退到简易提取")
+
+    # ── 回退：原始简易提取逻辑 ──
     # 尝试 manifest.json
     manifest = target / "manifest.json"
     if manifest.is_file():
@@ -275,8 +300,8 @@ def _build_package_metadata(scan_report: Dict[str, Any], target_dir: str) -> Dic
     if skill.is_file():
         try:
             with open(skill, encoding="utf-8") as fh:
-                content = fh.read()
-            fm = _parse_frontmatter(content)
+                fm_content = fh.read()
+            fm = _parse_frontmatter(fm_content)
             if fm:
                 return fm
         except (OSError, UnicodeDecodeError):

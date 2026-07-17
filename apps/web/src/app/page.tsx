@@ -51,6 +51,10 @@ export default function HomePage() {
 
       <ScannerForm />
 
+      <p className="results-meta">
+        {filtered.length} package{filtered.length !== 1 ? 's' : ''} found
+      </p>
+
       {loading && (
         <div className="empty-state">
           <div className="empty-state-icon">&#x23F3;</div>
