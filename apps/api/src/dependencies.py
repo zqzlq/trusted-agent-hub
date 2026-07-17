@@ -16,23 +16,18 @@ from src.database import (
 )
 from src.errors import ConsumerAPIError
 from src.repositories.base import PackageRepository
-from src.repositories.mock import JsonPackageRepository
 from src.repositories.sqlalchemy import SqlAlchemyPackageRepository
 from src.settings import Settings, clear_settings_cache, get_settings
-
-
-ROOT = Path(__file__).resolve().parents[3]
-MOCK = ROOT / "packages" / "schema" / "mock"
 
 
 @lru_cache
 def get_package_repository() -> PackageRepository:
     """Return the process-wide configured package repository."""
     settings = get_settings()
-    if settings.database_url is not None:
-        engine = get_runtime_engine(settings.database_url)
-        return SqlAlchemyPackageRepository(create_session_factory(engine))
-    return JsonPackageRepository(MOCK / "packages.json", MOCK / "versions")
+    if settings.database_url is None:
+        raise RuntimeError("DATABASE_URL environment variable is required. PostgreSQL must be running.")
+    engine = get_runtime_engine(settings.database_url)
+    return SqlAlchemyPackageRepository(create_session_factory(engine))
 
 
 def clear_runtime_dependencies() -> None:

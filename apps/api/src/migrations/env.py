@@ -1,5 +1,6 @@
 """Alembic migration environment."""
 
+import src.settings  # noqa: F401 - loads .env into os.environ
 from logging.config import fileConfig
 import os
 

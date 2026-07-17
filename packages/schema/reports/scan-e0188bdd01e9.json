@@ -1,20 +1,20 @@
 {
-  "scan_id": "scan-bc096cdaaa14",
+  "scan_id": "scan-e0188bdd01e9",
   "repo_url": "E:\\open source internship program\\TrustedAgentHub\\examples\\skills\\demo-code-review",
   "package_name": "demo-code-review",
   "version": "1.0.0",
-  "created_at": "2026-07-09T09:26:08.345272+00:00",
-  "finished_at": "2026-07-09T09:26:08.356536+00:00",
+  "created_at": "2026-07-17T08:01:42.837792+00:00",
+  "finished_at": "2026-07-17T08:01:42.854889+00:00",
   "scan_report": {
-    "scan_id": "scan-8b73aa2ceeec",
+    "scan_id": "scan-44b7e4c02dfe",
     "package_name": "demo-code-review",
     "version": "1.0.0",
-    "scanned_at": "2026-07-09T09:26:08.348826+00:00",
+    "scanned_at": "2026-07-17T08:01:42.841374+00:00",
     "scanner_version": "0.1.0",
-    "duration_ms": 6,
+    "duration_ms": 12,
     "findings": [
       {
-        "id": "finding-b4dc91d9",
+        "id": "finding-c28dc1e4",
         "rule_id": "SR-002",
         "severity": "high",
         "category": "dangerous_shell",
@@ -30,7 +30,7 @@
         "cwe_id": "CWE-78"
       },
       {
-        "id": "finding-689babc2",
+        "id": "finding-bc6fa194",
         "rule_id": "SR-009",
         "severity": "low",
         "category": "source_integrity",
@@ -43,7 +43,7 @@
         "remediation": "补充 integrity.sha256、signature/attestation_url、sbom_url，并在 source 中锁定 commit_hash。"
       },
       {
-        "id": "finding-149b7f97",
+        "id": "finding-57722606",
         "rule_id": "SR-010",
         "severity": "medium",
         "category": "metadata_quality",
@@ -87,7 +87,7 @@
     "score": 7,
     "package_name": "demo-code-review",
     "version": "1.0.0",
-    "calculated_at": "2026-07-09T09:26:08.356536+00:00",
+    "calculated_at": "2026-07-17T08:01:42.854889+00:00",
     "model_version": "0.1.0",
     "dimensions": {
       "source_trust": {

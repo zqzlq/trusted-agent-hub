@@ -1,5 +1,6 @@
 """Upgrade a configured database to the latest packaged schema."""
 
+import src.settings  # noqa: F401 - loads .env into os.environ
 import os
 from pathlib import Path
 

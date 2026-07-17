@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { packages } from '@/data/packages';
+import { useEffect, useState } from 'react';
+import { fetchPackage, type Package } from '@/data/packages';
 import ScoreBadge from '@/components/ScoreBadge';
 import TypeBadge from '@/components/TypeBadge';
 import StatusBadge from '@/components/StatusBadge';
@@ -35,7 +36,28 @@ export default function PackageDetailPage() {
   const router = useRouter();
   const name = decodeURIComponent(params.name as string);
 
-  const pkg = packages.find((p) => p.name === name);
+  const [pkg, setPkg] = useState<Package | null | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPackage(name)
+      .then(setPkg)
+      .finally(() => setLoading(false));
+  }, [name]);
+
+  if (loading) {
+    return (
+      <div className="detail-page">
+        <button className="detail-back" onClick={() => router.push('/')}>
+          &larr; Back to packages
+        </button>
+        <div className="empty-state">
+          <div className="empty-state-icon">&#x23F3;</div>
+          <h3>Loading...</h3>
+        </div>
+      </div>
+    );
+  }
 
   if (!pkg) {
     return (
