@@ -1,0 +1,310 @@
+"""供给侧数据库操作仓库。
+
+与消费侧 SqlAlchemyPackageRepository 并行，
+专门负责供给侧表（review_records / scan_reports / audit_logs / users）
+以及供给侧对 packages / package_versions 的写操作。
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session
+
+from src.repositories.orm import (
+    PackageRow,
+    PackageVersionRow,
+)
+from src.repositories.orm_producer import (
+    AuditLogRow,
+    ReviewRecordRow,
+    ScanReportRow,
+    UserRow,
+)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _serialize_dt(value: datetime) -> str:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.isoformat().replace("+00:00", "Z")
+
+
+class ProducerRepository:
+    """供给侧所有数据库写操作 + 查询。"""
+
+    def __init__(self, session_factory: Callable[[], Session]) -> None:
+        self.session_factory = session_factory
+
+    # ── 包操作 ────────────────────────────────────────────
+
+    def create_package(
+        self,
+        *,
+        name: str,
+        type: str,
+        description: str,
+        license: str | None = None,
+        keywords: list[str] | None = None,
+        category: str | None = None,
+        homepage: str | None = None,
+        icon_url: str | None = None,
+        author: dict[str, object] | None = None,
+        permissions: dict[str, object] | None = None,
+        installation: dict[str, object] | None = None,
+        source: dict[str, object] | None = None,
+        compatibility: list[str] | None = None,
+    ) -> dict[str, object]:
+        """创建能力包，返回包基本信息。"""
+        pkg_id = f"pkg-{uuid4().hex}"
+        now = _utc_now()
+        data: dict[str, object] = {
+            "id": pkg_id,
+            "name": name,
+            "description": description,
+            "type": type,
+            "license": license,
+            "keywords": keywords or [],
+            "category": category,
+            "homepage": homepage,
+            "icon_url": icon_url,
+            "author": author,
+            "permissions": permissions,
+            "installation": installation,
+            "source": source,
+            "compatibility": compatibility or [],
+            "latest_version": "0.0.0",
+            "status": "draft",
+            "trust_score": None,
+            "risk_level": None,
+            "install_count": 0,
+            "avg_rating": None,
+            "created_at": _serialize_dt(now),
+            "updated_at": _serialize_dt(now),
+        }
+        with self.session_factory() as session:
+            session.add(
+                PackageRow(
+                    id=pkg_id,
+                    name=name,
+                    status="draft",
+                    latest_version="0.0.0",
+                    data=data,
+                )
+            )
+            session.commit()
+        return data
+
+    def get_package(self, package_id: str) -> dict[str, object] | None:
+        with self.session_factory() as session:
+            row = session.get(PackageRow, package_id)
+            if row is None:
+                return None
+            versions_count = session.scalar(
+                select(func.count())
+                .select_from(PackageVersionRow)
+                .where(PackageVersionRow.package_id == package_id)
+            )
+            data = dict(row.data)
+            data["versions_count"] = versions_count or 0
+            return data
+
+    def list_package_versions(
+        self, package_id: str
+    ) -> list[dict[str, object]]:
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(PackageVersionRow)
+                .where(PackageVersionRow.package_id == package_id)
+                .order_by(PackageVersionRow.version)
+            ).all()
+            return [_version_brief(row) for row in rows]
+
+    # ── 版本操作 ──────────────────────────────────────────
+
+    def create_version(
+        self,
+        *,
+        package_id: str,
+        version: str,
+        repo_url: str | None = None,
+        description: str | None = None,
+        installation: dict[str, object] | None = None,
+        source: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        """创建新版本，返回版本信息。"""
+        version_id = f"ver-{uuid4().hex}"
+        now = _utc_now()
+        data: dict[str, object] = {
+            "id": version_id,
+            "package_id": package_id,
+            "version": version,
+            "status": "draft",
+            "source": source or {"type": "git", "repository_url": repo_url or "", "ref": "", "commit_hash": ""},
+            "description": description,
+            "installation": installation,
+            "submitted_at": None,
+            "trust_score": None,
+            "created_at": _serialize_dt(now),
+        }
+        with self.session_factory() as session:
+            session.add(
+                PackageVersionRow(
+                    id=version_id,
+                    package_id=package_id,
+                    version=version,
+                    status="draft",
+                    data=data,
+                )
+            )
+            session.commit()
+        return data
+
+    def get_version(self, version_id: str) -> dict[str, object] | None:
+        with self.session_factory() as session:
+            row = session.get(PackageVersionRow, version_id)
+            if row is None:
+                return None
+            return dict(row.data)
+
+    def update_version_status(
+        self, version_id: str, new_status: str
+    ) -> None:
+        with self.session_factory() as session:
+            row = session.get(PackageVersionRow, version_id)
+            if row is None:
+                return
+            row.status = new_status
+            # 同步更新 data JSON 中的 status
+            data = dict(row.data) if row.data else {}
+            data["status"] = new_status
+            row.data = data
+            session.commit()
+
+    def update_version_data(
+        self, version_id: str, updates: dict[str, object]
+    ) -> None:
+        with self.session_factory() as session:
+            row = session.get(PackageVersionRow, version_id)
+            if row is None:
+                return
+            data = dict(row.data) if row.data else {}
+            data.update(updates)
+            row.data = data
+            session.commit()
+
+    # ── 扫描报告 ──────────────────────────────────────────
+
+    def save_scan_report(
+        self,
+        *,
+        version_id: str,
+        scan_json: dict[str, object],
+        report_path: str | None = None,
+    ) -> None:
+        with self.session_factory() as session:
+            existing = session.get(ScanReportRow, version_id)
+            if existing is not None:
+                existing.scan_json = scan_json
+                existing.report_path = report_path
+                existing.scanned_at = _utc_now()
+            else:
+                session.add(
+                    ScanReportRow(
+                        version_id=version_id,
+                        scan_json=scan_json,
+                        report_path=report_path,
+                        scanned_at=_utc_now(),
+                    )
+                )
+            session.commit()
+
+    def get_scan_report(
+        self, version_id: str
+    ) -> dict[str, object] | None:
+        with self.session_factory() as session:
+            row = session.get(ScanReportRow, version_id)
+            if row is None:
+                return None
+            return {
+                "scan_json": row.scan_json,
+                "report_path": row.report_path,
+                "scanned_at": _serialize_dt(row.scanned_at),
+            }
+
+    # ── 审核记录 ──────────────────────────────────────────
+
+    def create_review_record(
+        self,
+        *,
+        version_id: str,
+        reviewer_id: str,
+        conclusion: str,
+        comment: str | None = None,
+    ) -> dict[str, object]:
+        record_id = f"rev-{uuid4().hex}"
+        now = _utc_now()
+        with self.session_factory() as session:
+            session.add(
+                ReviewRecordRow(
+                    id=record_id,
+                    version_id=version_id,
+                    reviewer_id=reviewer_id,
+                    conclusion=conclusion,
+                    comment=comment,
+                    created_at=now,
+                )
+            )
+            session.commit()
+        return {
+            "id": record_id,
+            "version_id": version_id,
+            "reviewer_id": reviewer_id,
+            "conclusion": conclusion,
+            "comment": comment,
+            "created_at": _serialize_dt(now),
+        }
+
+    # ── 审计日志 ──────────────────────────────────────────
+
+    def create_audit_log(
+        self,
+        *,
+        action: str,
+        target_type: str,
+        target_id: str,
+        operator_id: str,
+        detail: dict[str, object] | None = None,
+    ) -> None:
+        with self.session_factory() as session:
+            session.add(
+                AuditLogRow(
+                    id=f"audit-{uuid4().hex}",
+                    action=action,
+                    target_type=target_type,
+                    target_id=target_id,
+                    operator_id=operator_id,
+                    detail=detail,
+                    timestamp=_utc_now(),
+                )
+            )
+            session.commit()
+
+
+# ── 辅助函数 ──────────────────────────────────────────────
+
+def _version_brief(row: PackageVersionRow) -> dict[str, object]:
+    data = dict(row.data) if row.data else {}
+    return {
+        "id": row.id,
+        "version": row.version,
+        "status": row.status,
+        "submitted_at": data.get("submitted_at"),
+        "created_at": data.get("created_at"),
+    }

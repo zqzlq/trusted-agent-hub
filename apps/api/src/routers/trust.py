@@ -18,7 +18,7 @@ import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Callable, Dict, List, Any, Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
@@ -129,7 +129,13 @@ def _load_scorer():
 # ---------------------------------------------------------------------------
 
 
-def _run_scan_task(scan_id: str, source: str, *, is_local: bool = False) -> None:
+def _run_scan_task(
+    scan_id: str,
+    source: str,
+    *,
+    is_local: bool = False,
+    on_complete: Callable[[str, dict[str, Any] | None, str | None], None] | None = None,
+) -> None:
     """后台执行扫描流水线：clone → scan → score → save。
 
     此函数在 BackgroundTasks 中异步运行。
@@ -175,6 +181,8 @@ def _run_scan_task(scan_id: str, source: str, *, is_local: bool = False) -> None
                 _scans[scan_id]["error"] = f"Git clone failed after 3 attempts ({source}). If GitHub is unreachable, try using a local path."
                 print(f"[TAH-trust] *** git clone FAILED after 3 attempts")
                 shutil.rmtree(tmp_dir, ignore_errors=True)
+                if on_complete:
+                    on_complete(scan_id, None, _scans[scan_id]["error"])
                 return
 
         # Step 2: 运行扫描器
@@ -236,6 +244,8 @@ def _run_scan_task(scan_id: str, source: str, *, is_local: bool = False) -> None
         # 清理临时目录（仅 git clone 模式）
         if not is_local:
             shutil.rmtree(tmp_dir, ignore_errors=True)
+        if on_complete:
+            on_complete(scan_id, full_report, None)
         print(f"[TAH-trust] *** 扫描流水线完成: {scan_id}, score={trust_score_result.get('score')}")
 
     except Exception as exc:
@@ -245,6 +255,8 @@ def _run_scan_task(scan_id: str, source: str, *, is_local: bool = False) -> None
         import traceback; traceback.print_exc()
         if "tmp_dir" in locals() and not is_local:
             shutil.rmtree(tmp_dir, ignore_errors=True)
+        if on_complete:
+            on_complete(scan_id, None, str(exc))
 
 def _build_package_metadata(scan_report: Dict[str, Any], target_dir: str, repo_url: str = "") -> Dict[str, Any]:
     """从扫描报告和目标目录构建 package_metadata 用于评分引擎。
