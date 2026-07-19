@@ -297,6 +297,40 @@ class ProducerRepository:
             session.commit()
 
 
+
+    def list_audit_logs(
+        self,
+        *,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        action: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[dict[str, object]]:
+        """分页查询审计日志，支持按目标类型/目标ID/操作类型筛选。"""
+        with self.session_factory() as session:
+            stmt = select(AuditLogRow)
+            if target_type:
+                stmt = stmt.where(AuditLogRow.target_type == target_type)
+            if target_id:
+                stmt = stmt.where(AuditLogRow.target_id == target_id)
+            if action:
+                stmt = stmt.where(AuditLogRow.action == action)
+            stmt = stmt.order_by(AuditLogRow.timestamp.desc())
+            stmt = stmt.offset(offset).limit(limit)
+            rows = session.execute(stmt).scalars().all()
+            return [
+                {
+                    "id": row.id,
+                    "action": row.action,
+                    "target_type": row.target_type,
+                    "target_id": row.target_id,
+                    "operator_id": row.operator_id,
+                    "timestamp": _serialize_dt(row.timestamp),
+                    "detail": row.detail,
+                }
+                for row in rows
+            ]
 # ── 辅助函数 ──────────────────────────────────────────────
 
 def _version_brief(row: PackageVersionRow) -> dict[str, object]:

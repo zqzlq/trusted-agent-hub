@@ -83,3 +83,34 @@ class VersionResponse(StrictContractModel):
     review_conclusion: str | None = None
     submitted_at: str | None = None
     created_at: str | None = None
+
+
+# ── 审核与发布模型 ────────────────────────────────────────
+
+
+class ReviewRequest(StrictContractModel):
+    """POST /versions/{id}/reviews 请求体。"""
+
+    conclusion: str = Field(description='审核结论：approved | rejected | changes_requested')
+    comment: str | None = Field(default=None, description='审核意见（驳回/要求修改时必填）')
+
+
+class ReviewResponse(StrictContractModel):
+    """审核/发布/下架 操作的响应体。"""
+
+    version_id: str
+    conclusion: str | None = None
+    new_status: str
+    message: str = '操作完成'
+
+
+class AuditLogEntry(StrictContractModel):
+    """GET /audit-logs 响应条目。"""
+
+    id: str
+    action: str
+    target_type: str
+    target_id: str
+    operator_id: str
+    timestamp: str
+    detail: dict[str, object] | None = None

@@ -1,0 +1,146 @@
+"""审核流转 HTTP 路由 — 审核员提交结论、管理员发布/下架、审计日志查询。
+
+端点（均挂载在 /api/v0/producer 下）:
+    POST /versions/{id}/reviews      — 审核员提交审核结论
+    POST /versions/{id}/publish      — 管理员发布上线
+    POST /versions/{id}/yank         — 管理员下架
+    GET  /audit-logs                 — 审计日志查询
+"""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, HTTPException, Query
+
+from src.database import create_session_factory, get_runtime_engine
+from src.models.common import ErrorEnvelope
+from src.models.producer import (
+    AuditLogEntry,
+    ReviewRequest,
+    ReviewResponse,
+)
+from src.repositories.producer_sqlalchemy import ProducerRepository
+from src.services.producer import ProducerService, ProducerServiceError
+from src.settings import get_settings
+
+router = APIRouter(prefix="/api/v0/producer", tags=["review"])
+
+
+def _get_producer_repository() -> ProducerRepository:
+    """构建供给侧仓库（复用消费侧的数据库引擎）。"""
+    settings = get_settings()
+    if settings.database_url is None:
+        raise HTTPException(
+            status_code=503,
+            detail="DATABASE_URL 未配置，数据库不可用",
+        )
+    engine = get_runtime_engine(settings.database_url)
+    return ProducerRepository(create_session_factory(engine))
+
+
+# ── POST /versions/{version_id}/reviews ───────────────────
+
+@router.post(
+    "/versions/{version_id}/reviews",
+    response_model=ReviewResponse,
+    status_code=201,
+    responses={400: {"model": ErrorEnvelope}, 404: {"model": ErrorEnvelope}},
+)
+def submit_review(
+    version_id: str,
+    body: ReviewRequest,
+) -> ReviewResponse:
+    """审核员对指定版本提交审核结论。
+
+    conclusion: approved | rejected | changes_requested
+    """
+    repo = _get_producer_repository()
+    service = ProducerService(repo)
+    try:
+        return service.review_version(
+            version_id=version_id,
+            conclusion=body.conclusion,
+            comment=body.comment,
+            # TODO: 任务1.5 替换为真实审核员 ID
+            reviewer_id="system",
+        )
+    except ProducerServiceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ── POST /versions/{version_id}/publish ───────────────────
+
+@router.post(
+    "/versions/{version_id}/publish",
+    response_model=ReviewResponse,
+    status_code=200,
+    responses={400: {"model": ErrorEnvelope}, 404: {"model": ErrorEnvelope}},
+)
+def publish_version(version_id: str) -> ReviewResponse:
+    """管理员将审核通过的版本正式发布上线。
+
+    状态：approved → published
+    """
+    repo = _get_producer_repository()
+    service = ProducerService(repo)
+    try:
+        return service.publish_version(
+            version_id=version_id,
+            # TODO: 任务1.5 替换为真实管理员 ID
+            operator_id="system",
+        )
+    except ProducerServiceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ── POST /versions/{version_id}/yank ──────────────────────
+
+@router.post(
+    "/versions/{version_id}/yank",
+    response_model=ReviewResponse,
+    status_code=200,
+    responses={400: {"model": ErrorEnvelope}, 404: {"model": ErrorEnvelope}},
+)
+def yank_version(
+    version_id: str,
+    reason: str = Query(default="", description="下架原因"),
+) -> ReviewResponse:
+    """管理员下架已发布的版本。
+
+    状态：published → yanked
+    """
+    repo = _get_producer_repository()
+    service = ProducerService(repo)
+    try:
+        return service.yank_version(
+            version_id=version_id,
+            # TODO: 任务1.5 替换为真实管理员 ID
+            operator_id="system",
+            reason=reason if reason else None,
+        )
+    except ProducerServiceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ── GET /audit-logs ───────────────────────────────────────
+
+@router.get(
+    "/audit-logs",
+    response_model=list[AuditLogEntry],
+)
+def list_audit_logs(
+    target_type: str | None = Query(default=None, description="目标类型：package / version"),
+    target_id: str | None = Query(default=None, description="目标 ID"),
+    action: str | None = Query(default=None, description="操作类型"),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> list[AuditLogEntry]:
+    """查询审计日志，支持按目标类型/目标ID/操作类型筛选。"""
+    repo = _get_producer_repository()
+    rows = repo.list_audit_logs(
+        target_type=target_type,
+        target_id=target_id,
+        action=action,
+        limit=limit,
+        offset=offset,
+    )
+    return rows

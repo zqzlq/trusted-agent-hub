@@ -47,6 +47,7 @@ class VersionStatus(StrEnum):
     PUBLISHED = "published"
     YANKED = "yanked"
     RESUBMITTED = "resubmitted"
+    CHANGES_REQUESTED = "changes_requested"
 
 
 VERSION_STATUS_LABELS: Final[dict[str, str]] = {
@@ -60,6 +61,7 @@ VERSION_STATUS_LABELS: Final[dict[str, str]] = {
     "published": "已发布",
     "yanked": "已下架",
     "resubmitted": "已重新提交",
+    "changes_requested": "需修改",
 }
 
 # 状态转换规则
@@ -68,12 +70,13 @@ STATUS_TRANSITIONS: Final[dict[str, list[str]]] = {
     "submitted": ["scanning"],
     "scanning": ["pending_review", "error"],
     "error": ["submitted"],
-    "pending_review": ["approved", "rejected"],
+    "pending_review": ["approved", "rejected", "changes_requested"],
     "approved": ["published", "rejected"],
     "rejected": ["resubmitted"],
     "published": ["yanked"],
     "yanked": ["published"],
     "resubmitted": ["scanning"],
+    "changes_requested": ["scanning"],
 }
 
 PUBLISHABLE_STATUSES: Final[tuple[str, ...]] = ("approved",)

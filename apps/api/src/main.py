@@ -17,6 +17,7 @@ from .routers.feedback import router as feedback_router
 from .routers.install import router as install_router
 from .routers.packages import router as packages_router
 from .routers.producer import router as producer_router
+from .routers.review import router as review_router
 from .routers.stats import router as stats_router
 from .routers.trust import router as trust_router
 from .routers.trust_scores import router as trust_scores_router
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     application.include_router(stats_router, prefix="/api/v0")
     application.include_router(trust_router, prefix="/api/v0")
     application.include_router(producer_router)  # producer 路由自带 /api/v0 prefix
+    application.include_router(review_router)
 
     @application.get(
         "/api/v0/health", response_model=HealthResponse, tags=["health"]
